@@ -104,12 +104,16 @@ function handleDeepLink ( url ) {
 		const phone = parsed.searchParams.get( 'phone' );
 		const text = parsed.searchParams.get( 'text' );
 
-		let targetUrl = 'https://web.whatsapp.com/send?';
-		if ( phone ) targetUrl += `phone=${encodeURIComponent( phone )}`;
-		if ( text ) targetUrl += `&text=${encodeURIComponent( text )}`;
+		const target = new URL( 'https://web.whatsapp.com/send' );
+		if ( phone ) {
+			target.searchParams.set( 'phone', phone );
+		}
+		if ( text ) {
+			target.searchParams.set( 'text', text );
+		}
 
-		if ( mainWindow ) {
-			mainWindow.loadURL( targetUrl );
+		if ( mainWindow && ( phone || text ) ) {
+			mainWindow.loadURL( target.toString() );
 		}
 	} catch ( err ) {
 		console.error( 'Failed to parse deep link URL:', err );
