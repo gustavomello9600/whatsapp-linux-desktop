@@ -4,6 +4,11 @@ const path = require( 'node:path' );
 const contextMenu = require( 'electron-context-menu' );
 const appIcon = nativeImage.createFromPath( path.join( __dirname, 'build/icon.png' ) );
 
+const cliArgs = process.argv.slice( 1 );
+const shouldStartMinimized = cliArgs.includes( '--start-minimized' ) || cliArgs.includes( '--minimized' );
+const shouldStartInTray = cliArgs.includes( '--start-in-tray' ) || cliArgs.includes( '--tray' ) || cliArgs.includes( '--hidden' );
+const shouldStartHidden = shouldStartMinimized || shouldStartInTray;
+
 app.disableHardwareAcceleration();
 
 let mainWindow;
@@ -17,6 +22,7 @@ const createWindow = () => {
 		height: 800,
 		autoHideMenuBar: true,
 		frame: true,
+		show: false,
 		webPreferences: {
 			nodeIntegration: true,
 			webviewTag: true,
@@ -41,6 +47,14 @@ const createWindow = () => {
 		checkNotificationPermission();
 		setupExternalLinkHandling();
 		sendNotification();
+	} );
+
+	mainWindow.once( 'ready-to-show', () => {
+		if ( shouldStartHidden ) {
+			mainWindow.hide();
+		} else {
+			mainWindow.show();
+		}
 	} );
 
 	mainWindow.on( 'minimize', event => {
@@ -77,13 +91,13 @@ function setupTray () {
 
 	const trayMenu = Menu.buildFromTemplate( [
 		{
-			label: 'Mostrar',
+			label: 'Show',
 			click: () => {
 				showMainWindow();
 			}
 		},
 		{
-			label: 'Minimizar',
+			label: 'Hide to Tray',
 			click: () => {
 				if ( mainWindow?.isVisible() ) {
 					mainWindow.hide();
@@ -92,7 +106,7 @@ function setupTray () {
 		},
 		{ type: 'separator' },
 		{
-			label: 'Sair',
+			label: 'Exit',
 			click: () => {
 				isQuitting = true;
 				app.quit();
@@ -108,7 +122,7 @@ function setupTray () {
 }
 
 function showMainWindow () {
-	if ( !mainWindow ) {
+	if ( !mainWindow || mainWindow.isDestroyed() ) {
 		createWindow();
 		return;
 	}
